@@ -54,6 +54,14 @@ public:
   static void
   Write(const itk::TransformBaseTemplate<double> & itkTransform, const std::string & fileName);
 
+  static itk::SmartPointer<itk::TransformBaseTemplate<double>>
+  Read(const std::string & fileName);
+
+  static itk::TransformBaseTemplate<double>::Pointer
+  CreateCorrespondingElxTransform(const itk::TransformBaseTemplate<double> & itkTransform,
+                                  const std::string &                        fixedPixelType,
+                                  const std::string &                        movingPixelType);
+
 private:
   static itk::TransformBaseTemplate<double>::Pointer
   CreateCorrespondingItkTransform(const BaseComponent & elxTransform,

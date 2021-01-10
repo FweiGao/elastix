@@ -18,14 +18,18 @@
 #include "elxTransformIO.h"
 
 #include "elxBaseComponent.h"
+#include "elxElastixTemplate.h"
+#include "elxElastixMain.h"
 
 #include "xoutmain.h"
 
 #include <itkTransformBase.h>
 #include <itkTransformFactoryBase.h>
+#include <itkTransformFileReader.h>
 #include <itkTransformFileWriter.h>
 
 #include <string>
+
 
 itk::TransformBaseTemplate<double>::Pointer
 elastix::TransformIO::CreateCorrespondingItkTransform(const elx::BaseComponent & elxTransform,
@@ -60,6 +64,41 @@ elastix::TransformIO::CreateCorrespondingItkTransform(const elx::BaseComponent &
   return dynamic_cast<itk::TransformBaseTemplate<double> *>(instance.GetPointer());
 }
 
+
+itk::TransformBaseTemplate<double>::Pointer
+elastix::TransformIO::CreateCorrespondingElxTransform(const itk::TransformBaseTemplate<double> & itkTransform,
+                                                      const std::string &                        fixedPixelType,
+                                                      const std::string &                        movingPixelType)
+{
+  const auto * const componentDatabase = elx::ElastixMain::GetComponentDatabase();
+
+  std::string className = itkTransform.GetNameOfClass();
+
+  // Remove "nD" from ITK's "Euler2DTransform", "Similarity3DTransform", etc.
+  const auto found = std::min(className.find("2D"), className.find("3D"));
+
+  if (found != std::string::npos)
+  {
+    className.erase(found, 2);
+  }
+
+  const auto index = componentDatabase->GetIndex(
+    fixedPixelType, itkTransform.GetInputSpaceDimension(), movingPixelType, itkTransform.GetOutputSpaceDimension());
+  const auto creator = componentDatabase->GetCreator(className, index);
+
+  if (creator != nullptr)
+  {
+    const auto object = creator();
+
+    if (object != nullptr)
+    {
+      return dynamic_cast<itk::TransformBaseTemplate<double> *>(&*creator());
+    }
+  }
+  return nullptr;
+}
+
+
 void
 elastix::TransformIO::Write(const itk::TransformBaseTemplate<double> & itkTransform, const std::string & fileName)
 {
@@ -75,4 +114,22 @@ elastix::TransformIO::Write(const itk::TransformBaseTemplate<double> & itkTransf
   {
     xl::xout["error"] << "Error trying to write " << fileName << ":\n" << stdException.what() << std::endl;
   }
+}
+
+
+itk::SmartPointer<itk::TransformBaseTemplate<double>>
+elastix::TransformIO::Read(const std::string & fileName)
+{
+  const auto reader = itk::TransformFileReader::New();
+
+  reader->SetFileName(fileName);
+  reader->Update();
+
+  const auto transformList = reader->GetModifiableTransformList();
+  assert(transformList != nullptr);
+
+  // More than one transform is not yet supported.
+  assert(transformList->size() <= 1);
+
+  return transformList->empty() ? nullptr : transformList->front();
 }
