@@ -108,3 +108,81 @@ GTEST_TEST(ElastixFilter, Translation)
     EXPECT_EQ(std::round(std::stod(transformParameters[i])), translationOffset[i]);
   }
 }
+
+
+GTEST_TEST(ElastixFilter, UpdateInParallel)
+{
+  constexpr auto ImageDimension = 2;
+  using ImageType = itk::Image<float, ImageDimension>;
+  using SizeType = itk::Size<ImageDimension>;
+
+  const auto                             imageSizeValue = 8;
+  const itk::ImageRegion<ImageDimension> imageRegion{ itk::Index<ImageDimension>::Filled(imageSizeValue / 2),
+                                                      SizeType::Filled(2) };
+
+  const auto               numberOfImages = 10;
+  ImageType::Pointer       images[numberOfImages];
+  std::vector<std::string> transformParameters[numberOfImages - 1];
+
+  const auto parameterObject = elx::ParameterObject::New();
+  parameterObject->SetParameterMap(
+    elx::ParameterObject::ParameterMapType{ // Parameters in alphabetic order:
+                                            { "ImageSampler", { "Full" } },
+                                            { "MaximumNumberOfIterations", { "2" } },
+                                            { "Metric", { "AdvancedNormalizedCorrelation" } },
+                                            { "Optimizer", { "AdaptiveStochasticGradientDescent" } },
+                                            { "Transform", { "TranslationTransform" } } });
+  for (auto & image : images)
+  {
+    image = ImageType::New();
+    image->SetRegions(SizeType::Filled(imageSizeValue));
+    image->Allocate(true);
+
+    const itk::Experimental::ImageRegionRange<ImageType> imageRegionRange{ *image, imageRegion };
+    std::fill(std::begin(imageRegionRange), std::end(imageRegionRange), 1.0f);
+  }
+
+  // Note: The OpenMP implementation of GCC (including GCC 5.5 and GCC 10.2)
+  // does not seem to support value-initialization of a for-loop index by
+  // empty pair of braces, as in `for (int i{}; i < n; ++i)`.
+#pragma omp parallel for
+  for (auto i = 0; i < (numberOfImages - 1); ++i)
+  {
+    const auto filter = elx::ElastixFilter<ImageType, ImageType>::New();
+    filter->LogToConsoleOff();
+    filter->LogToFileOff();
+    filter->SetFixedImage(images[i]);
+    filter->SetMovingImage(images[i + std::size_t{ 1 }]);
+    filter->SetParameterObject(parameterObject);
+    filter->Update();
+
+    const auto transformParameterObject = filter->GetTransformParameterObject();
+
+    if (transformParameterObject != nullptr)
+    {
+      const auto & transformParameterMaps = transformParameterObject->GetParameterMap();
+
+      if (transformParameterMaps.size() == 1)
+      {
+        const auto & transformParameterMap = transformParameterMaps.front();
+        const auto   found = transformParameterMap.find("TransformParameters");
+
+        if (found != transformParameterMap.cend())
+        {
+          transformParameters[i] = found->second;
+        }
+      }
+    }
+  }
+
+  // Test the resulting TransformParameters after the parallel for loop.
+  for (std::size_t i{}; i < (numberOfImages - 1); ++i)
+  {
+    EXPECT_EQ(transformParameters[i].size(), ImageDimension);
+
+    for (const auto & transformParameter : transformParameters[i])
+    {
+      EXPECT_EQ(transformParameter, "0");
+    }
+  }
+}
