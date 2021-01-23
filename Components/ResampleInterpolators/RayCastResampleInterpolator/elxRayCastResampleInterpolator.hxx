@@ -146,44 +146,18 @@ RayCastResampleInterpolator<TElastix>::ReadFromFile(void)
 
 
 /**
- * ******************* WriteToFile ******************************
+ * ******************* CreateDerivedTransformParametersMap ******************************
  */
 
 template <class TElastix>
-void
-RayCastResampleInterpolator<TElastix>::WriteToFile(void) const
+auto
+RayCastResampleInterpolator<TElastix>::CreateDerivedTransformParametersMap() const -> ParameterMapType
 {
+  return { { "FocalPoint", BaseComponent::ToVectorOfStrings(this->GetFocalPoint()) },
+           { "PreParameters", BaseComponent::ToVectorOfStrings(this->m_PreTransform->GetParameters()) },
+           { "Threshold", { BaseComponent::ToString(this->GetThreshold()) } } };
 
-  /** Call WriteToFile of the ResamplerBase. */
-  this->Superclass2::WriteToFile();
-
-  PointType focalpoint = this->GetFocalPoint();
-
-  xout["transpar"] << "("
-                   << "FocalPoint ";
-  for (unsigned int i = 0; i < this->m_Elastix->GetMovingImage()->GetImageDimension(); i++)
-  {
-    xout["transpar"] << focalpoint[i] << " ";
-  }
-  xout["transpar"] << ")" << std::endl;
-
-  TransformParametersType preParameters = this->m_PreTransform->GetParameters();
-
-  xout["transpar"] << "("
-                   << "PreParameters ";
-
-  unsigned int numberofparameters = preParameters.GetSize();
-  for (unsigned int i = 0; i < numberofparameters; i++)
-  {
-    xout["transpar"] << preParameters[i] << " ";
-  }
-  xout["transpar"] << ")" << std::endl;
-
-  double threshold = this->GetThreshold();
-  xout["transpar"] << "(Threshold " << threshold << ")" << std::endl;
-
-} // end WriteToFile()
-
+} // end CreateDerivedTransformParametersMap()
 
 } // end namespace elastix
 

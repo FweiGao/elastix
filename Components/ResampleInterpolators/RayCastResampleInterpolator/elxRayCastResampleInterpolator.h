@@ -98,6 +98,8 @@ public:
                                                      CombinationTransformType;
   typedef typename CombinationTransformType::Pointer CombinationTransformPointer;
 
+  typedef typename Superclass2::ParameterMapType ParameterMapType;
+
   int
   BeforeAll(void) override;
 
@@ -107,10 +109,6 @@ public:
   /** Function to read transform-parameters from a file. */
   void
   ReadFromFile(void) override;
-
-  /** Function to write transform-parameters to a file. */
-  void
-  WriteToFile(void) const override;
 
 protected:
   /** The constructor. */
@@ -126,6 +124,9 @@ protected:
   InitializeRayCastInterpolator(void);
 
 private:
+  ParameterMapType
+  CreateDerivedTransformParametersMap() const override;
+
   /** The deleted copy constructor. */
   RayCastResampleInterpolator(const Self &) = delete;
 

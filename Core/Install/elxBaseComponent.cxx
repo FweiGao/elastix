@@ -207,6 +207,12 @@ BaseComponent::ToString(const double scalar)
   return itk::NumberToString<double>{}(scalar);
 }
 
+std::string
+BaseComponent::ToString(const float scalar)
+{
+  return itk::NumberToString<double>{}(scalar);
+}
+
 bool
 BaseComponent::IsNumber(const std::string & str)
 {

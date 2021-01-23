@@ -174,11 +174,11 @@ public:
   ReadFromFile(void);
 
   /** Function to write transform-parameters to a file. */
-  virtual void
+  void
   WriteToFile(void) const;
 
   /** Function to create transform-parameters map. */
-  virtual void
+  void
   CreateTransformParametersMap(ParameterMapType * paramsMap) const;
 
   /** Function to perform resample and write the result output image to a file. */
