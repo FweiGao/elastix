@@ -793,11 +793,6 @@ ElastixTemplate<TFixedImage, TMovingImage>::CreateTransformParameterFile(const s
     transformationParameterInfo.RemoveOutput("log");
   }
 
-  /** Format specifiers of the transformation parameter file. */
-  xout["transpar"] << std::showpoint;
-  xout["transpar"] << std::fixed;
-  xout["transpar"] << std::setprecision(this->GetDefaultOutputPrecision());
-
   /** Separate clearly in log-file. */
   if (toLog)
   {
