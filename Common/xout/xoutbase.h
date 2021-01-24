@@ -61,7 +61,7 @@ public:
   xoutbase() = default;
 
   /** Destructor */
-  virtual ~xoutbase() = default;
+  virtual ~xoutbase() = 0;
 
   /** The operator [] simply calls this->SelectXCell(cellname).
    * It returns an x-cell */
